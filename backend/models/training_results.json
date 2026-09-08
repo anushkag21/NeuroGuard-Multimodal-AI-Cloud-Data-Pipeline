@@ -1,0 +1,75 @@
+{
+  "expression": {
+    "accuracy": 0.9278872013092041,
+    "features": "sad_expression",
+    "source": "Camera"
+  },
+  "blink": {
+    "accuracy": 0.8275678753852844,
+    "features": "blink_rate",
+    "source": "Camera"
+  },
+  "posture": {
+    "accuracy": 0.8690792918205261,
+    "features": "posture_score",
+    "source": "Camera"
+  },
+  "physio": {
+    "accuracy": 0.87839275598526,
+    "features": "hr_bpm,spo2,rmssd",
+    "source": "MAX30102"
+  },
+  "phq9": {
+    "accuracy": 0.9278872013092041,
+    "features": "phq9_score",
+    "source": "Questionnaire"
+  },
+  "ensemble": {
+    "accuracy": 0.9803086748270357,
+    "type": "sklearn",
+    "meta_learner_accuracies": {
+      "gbm": 0.976317189994678,
+      "rf": 0.9803086748270357,
+      "nn": 0.980042576789856
+    }
+  },
+  "combined_fallback": {
+    "accuracy": 0.9803086519241333
+  },
+  "test_accuracy": 0.9816,
+  "classification_report": {
+    "Normal": {
+      "precision": 0.9851428571428571,
+      "recall": 0.9828962371721779,
+      "f1-score": 0.9840182648401826,
+      "support": 877.0
+    },
+    "Mild/Moderate": {
+      "precision": 0.9760479041916168,
+      "recall": 0.9848942598187311,
+      "f1-score": 0.9804511278195489,
+      "support": 993.0
+    },
+    "Severe": {
+      "precision": 0.985553772070626,
+      "recall": 0.9746031746031746,
+      "f1-score": 0.9800478850758181,
+      "support": 630.0
+    },
+    "accuracy": 0.9816,
+    "macro avg": {
+      "precision": 0.9822481778016999,
+      "recall": 0.9807978905313611,
+      "f1-score": 0.9815057592451831,
+      "support": 2500.0
+    },
+    "weighted avg": {
+      "precision": 0.9816338923924223,
+      "recall": 0.9816,
+      "f1-score": 0.9816008623149671,
+      "support": 2500.0
+    }
+  },
+  "dataset_csv": "/Users/anushkagupta/Downloads/minor-project-main/python_core/neuroguard_synthetic_data.csv",
+  "dataset_rows": 25000
+}

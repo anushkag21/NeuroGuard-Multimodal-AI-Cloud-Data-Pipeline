@@ -1,0 +1,29 @@
+{
+  "meta_type": "sklearn",
+  "best_name": "Random Forest",
+  "best_accuracy": 0.9803086748270357,
+  "gbm_accuracy": 0.976317189994678,
+  "rf_accuracy": 0.9803086748270357,
+  "nn_accuracy": 0.980042576789856,
+  "feature_names": [
+    "sad_expr",
+    "blink_rate",
+    "posture",
+    "hr_bpm",
+    "spo2",
+    "rmssd",
+    "phq9"
+  ],
+  "hardware": [
+    "Camera (MacBook)",
+    "MAX30102 (HR+SpO2+HRV)",
+    "PHQ-9 Questionnaire"
+  ],
+  "num_features": 7,
+  "num_classes": 3,
+  "class_labels": [
+    "Normal",
+    "Mild/Moderate",
+    "Severe"
+  ]
+}

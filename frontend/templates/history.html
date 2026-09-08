@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %}Session History – NeuroGuard Clinic{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">Session History</h2>
+            <p class="text-muted mb-0">View all past depression analysis sessions</p>
+        </div>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-accent">
+            <i class="bi bi-plus-lg me-1"></i>New Test
+        </a>
+    </div>
+
+    <!-- Stats Summary -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="glass-card p-3 text-center">
+                <div class="stat-mini-number">{{ sessions | length }}</div>
+                <small class="text-muted">Total Sessions</small>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="glass-card p-3 text-center">
+                {% set normal_count = sessions | selectattr('severity', 'equalto', 'Normal') | list | length %}
+                <div class="stat-mini-number text-success">{{ normal_count }}</div>
+                <small class="text-muted">Normal</small>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="glass-card p-3 text-center">
+                {% set mild_mod = sessions | rejectattr('severity', 'equalto', 'Normal') | rejectattr('severity', 'equalto', 'Severe') | list | length %}
+                <div class="stat-mini-number text-warning">{{ mild_mod }}</div>
+                <small class="text-muted">Mild / Moderate</small>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="glass-card p-3 text-center">
+                {% set severe_count = sessions | selectattr('severity', 'equalto', 'Severe') | list | length %}
+                <div class="stat-mini-number text-danger">{{ severe_count }}</div>
+                <small class="text-muted">Severe</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search & Filter -->
+    <div class="glass-card p-3 mb-4">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-secondary">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" class="form-control bg-transparent border-secondary"
+                           placeholder="Search by Patient ID or Name..." id="searchInput"
+                           onkeyup="filterSessions()">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select bg-transparent border-secondary" id="severityFilter"
+                        onchange="filterSessions()">
+                    <option value="">All Severities</option>
+                    <option value="Normal">Normal</option>
+                    <option value="Mild">Mild</option>
+                    <option value="Moderate">Moderate</option>
+                    <option value="Severe">Severe</option>
+                </select>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <span class="text-muted small" id="resultCount">{{ sessions | length }} sessions found</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sessions Table -->
+    <div class="glass-card p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 history-table" id="sessionsTable">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Session ID</th>
+                        <th>Patient</th>
+                        <th>Date & Time</th>
+                        <th>Duration</th>
+                        <th class="text-center">Score</th>
+                        <th class="text-center">Severity</th>
+                        <th class="text-center">Confidence</th>
+                        <th>Mode</th>
+                        <th class="text-center pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in sessions %}
+                    <tr class="session-row"
+                        data-patient="{{ s.patient_name }}" data-id="{{ s.patient_id }}"
+                        data-severity="{{ s.severity }}">
+                        <td class="ps-4">
+                            <span class="fw-bold text-accent">{{ s.session_id }}</span>
+                        </td>
+                        <td>
+                            <div>
+                                <span class="fw-medium">{{ s.patient_name }}</span>
+                                <small class="d-block text-muted">{{ s.patient_id }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <small>{{ s.timestamp }}</small>
+                        </td>
+                        <td>{{ s.duration }}</td>
+                        <td class="text-center">
+                            <span class="score-pill {% if s.score <= 4 %}score-normal{% elif s.score <= 9 %}score-mild{% elif s.score <= 14 %}score-moderate{% else %}score-severe{% endif %}">
+                                {{ s.score }}/27
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge {% if s.severity == 'Normal' %}bg-success{% elif s.severity == 'Mild' %}bg-warning text-dark{% elif s.severity == 'Moderate' %}bg-orange{% else %}bg-danger{% endif %} rounded-pill px-3">
+                                {{ s.severity }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <span class="fw-bold">{{ s.confidence }}%</span>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1 flex-wrap">
+                                {% for sensor in s.sensors_used %}
+                                <span class="badge bg-secondary-subtle text-secondary small">{{ sensor }}</span>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td class="text-center pe-4" style="min-width: 100px;">
+                            <a href="{{ url_for('report', session_id=s.session_id) }}"
+                               class="btn btn-sm btn-outline-accent" title="View Report">
+                                <i class="bi bi-file-earmark-medical"></i>
+                            </a>
+                            <button class="btn btn-sm btn-outline-danger ms-1" title="Delete Session"
+                                    onclick="deleteSession('{{ s.session_id }}', this)">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if not sessions %}
+    <div class="glass-card text-center py-5">
+        <i class="bi bi-clipboard2 display-3 text-muted mb-3 d-block"></i>
+        <h5>No sessions yet</h5>
+        <p class="text-muted">Start your first depression analysis test from the dashboard.</p>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-accent mt-2">
+            <i class="bi bi-play-circle me-1"></i>Start Test
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterSessions() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const severity = document.getElementById('severityFilter').value;
+    const rows = document.querySelectorAll('.session-row');
+    let visible = 0;
+
+    rows.forEach(row => {
+        const patient = row.dataset.patient.toLowerCase();
+        const id = row.dataset.id.toLowerCase();
+        const sev = row.dataset.severity;
+
+        const matchSearch = !search || patient.includes(search) || id.includes(search);
+        const matchSeverity = !severity || sev === severity;
+
+        if (matchSearch && matchSeverity) {
+            row.style.display = '';
+            visible++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    document.getElementById('resultCount').textContent = visible + ' sessions found';
+}
+
+async function deleteSession(sessionId, btn) {
+    if (!confirm('Are you sure you want to delete this test report? This cannot be undone.')) {
+        return;
+    }
+    
+    // Disable button and show spinner
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+    btn.disabled = true;
+
+    try {
+        const res = await fetch(`/api/delete_session/${sessionId}`, {
+            method: 'DELETE'
+        });
+        
+        if (res.ok) {
+            // Remove the row dynamically
+            const row = btn.closest('tr');
+            row.remove();
+            
+            // Re-run filter to update counts
+            filterSessions();
+        } else {
+            alert('Failed to delete the session. Please try again.');
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+        }
+    } catch (err) {
+        console.error('Error deleting session:', err);
+        alert('An error occurred. Please try again.');
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+    }
+}
+</script>
+{% endblock %}

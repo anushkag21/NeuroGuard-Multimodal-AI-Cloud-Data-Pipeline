@@ -1,0 +1,490 @@
+{% extends "base.html" %}
+{% block title %}Live Test – NeuroGuard Clinic{% endblock %}
+
+{% block content %}
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <div class="container-fluid px-4">
+        <div class="row align-items-center g-3">
+            <!-- Patient Info & Timer -->
+            <div class="col-lg-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="patient-avatar">
+                        <i class="bi bi-person-fill"></i>
+                    </div>
+                    <div>
+                        <small class="text-muted">Patient Info</small>
+                        <h5 class="mb-0 fw-bold" id="patientId">{{ patient_id }}</h5>
+                        <input type="text" id="patientName" class="form-control form-control-sm bg-transparent border-secondary text-white mt-1" style="width: 150px;" placeholder="Patient Name">
+                    </div>
+                </div>
+            </div>
+            <!-- Timer -->
+            <div class="col-lg-2">
+                <div class="timer-display text-center">
+                    <small class="text-muted d-block">Session Timer</small>
+                    <span class="timer-value" id="sessionTimer">00:00</span>
+                </div>
+            </div>
+            <!-- Sensor Status -->
+            <div class="col-lg-4">
+                <div class="sensor-status-bar d-flex gap-2 flex-wrap justify-content-center">
+                    {% for key, sensor in sensor_status.items() %}
+                    <div class="sensor-badge" id="sensor-{{ key }}" data-sensor="{{ key }}">
+                        <span class="sensor-dot {{ 'online' if sensor.online else 'offline' }}"></span>
+                        <span class="sensor-name">{{ sensor.label }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <!-- Live Score -->
+            <div class="col-lg-3">
+                <div class="live-score-container text-center">
+                    <small class="text-muted d-block">Depression Score</small>
+                    <div class="live-score" id="liveScore">
+                        <span class="score-value">0</span>
+                        <span class="score-max">/27</span>
+                    </div>
+                    <div class="severity-badge" id="severityBadge">Normal</div>
+                    <div class="confidence-text" id="confidenceText">Confidence: ---%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Dashboard Grid -->
+<div class="container-fluid px-4 py-3">
+    <div class="row g-3">
+
+        <!-- LEFT: Camera Feed -->
+        <div class="col-lg-4 mb-4">
+            <div class="glass-card dash-panel d-flex flex-column" id="cameraPanelCard" style="height: 100%;">
+                <div class="panel-header">
+                    <h6 class="panel-title"><i class="bi bi-camera-video me-2"></i>Live Camera Feed</h6>
+                    <span class="badge bg-success-subtle text-success" id="cameraStatusBadge">
+                        <i class="bi bi-circle-fill blink-dot me-1"></i>LIVE
+                    </span>
+                </div>
+                <div class="camera-container" id="cameraContainer">
+                    <video id="cameraFeed" autoplay muted playsinline></video>
+                    <canvas id="cameraOverlay"></canvas>
+                    <div class="camera-offline-msg" id="cameraOfflineMsg" style="display:none;">
+                        <i class="bi bi-camera-video-off fs-3 mb-2"></i>
+                        <p class="mb-1">Camera unavailable</p>
+                        <small class="text-muted d-block mb-3">Please check permissions.</small>
+                        <button class="btn btn-sm btn-outline-accent" onclick="initCamera()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Retry Camera
+                        </button>
+                    </div>
+
+                    <!-- Hover Vitals Tab Bar -->
+                    <div class="camera-hover-vitals" id="cameraMetricsHover">
+                        <!-- Tab Navigation -->
+                        <div class="vitals-tabs">
+                            <button class="vitals-tab active" data-tab="overview" onclick="switchVitalsTab(this, 'overview')">
+                                <i class="bi bi-speedometer2"></i> Overview
+                            </button>
+                            <button class="vitals-tab" data-tab="expression" onclick="switchVitalsTab(this, 'expression')">
+                                <i class="bi bi-emoji-neutral"></i> Expression
+                            </button>
+                            <button class="vitals-tab" data-tab="analysis" onclick="switchVitalsTab(this, 'analysis')">
+                                <i class="bi bi-graph-up"></i> AI Analysis
+                            </button>
+                        </div>
+
+                        <!-- Tab: Overview -->
+                        <div class="vitals-tab-content active" id="tab-overview">
+                            <div class="row g-2">
+                                <div class="col-4">
+                                    <div class="metric-mini">
+                                        <span class="metric-mini-label">Blinks/min</span>
+                                        <span class="metric-mini-value" id="blinkRate">--</span>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="metric-mini">
+                                        <span class="metric-mini-label">Expression</span>
+                                        <span class="metric-mini-value" id="facialExpression">--</span>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="metric-mini">
+                                        <span class="metric-mini-label">Posture</span>
+                                        <span class="metric-mini-value" id="postureScore">--%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab: Expression Breakdown -->
+                        <div class="vitals-tab-content" id="tab-expression">
+                            <div class="expression-bars">
+                                <div class="expression-row">
+                                    <span class="expr-label">Neutral</span>
+                                    <div class="expr-bar-track"><div class="expr-bar expr-neutral" id="exprNeutral" style="width:0%"></div></div>
+                                    <span class="expr-pct" id="exprNeutralPct">0%</span>
+                                </div>
+                                <div class="expression-row">
+                                    <span class="expr-label">Sad</span>
+                                    <div class="expr-bar-track"><div class="expr-bar expr-sad" id="exprSad" style="width:0%"></div></div>
+                                    <span class="expr-pct" id="exprSadPct">0%</span>
+                                </div>
+                                <div class="expression-row">
+                                    <span class="expr-label">Happy</span>
+                                    <div class="expr-bar-track"><div class="expr-bar expr-happy" id="exprHappy" style="width:0%"></div></div>
+                                    <span class="expr-pct" id="exprHappyPct">0%</span>
+                                </div>
+                                <div class="expression-row">
+                                    <span class="expr-label">Anxious</span>
+                                    <div class="expr-bar-track"><div class="expr-bar expr-anxious" id="exprAnxious" style="width:0%"></div></div>
+                                    <span class="expr-pct" id="exprAnxiousPct">0%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab: AI Analysis -->
+                        <div class="vitals-tab-content" id="tab-analysis">
+                            <div class="ai-analysis-mini">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted small">AI Severity</span>
+                                    <span class="text-accent fw-bold small" id="hoverAiSeverity">--</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted small">Model Confidence</span>
+                                    <span class="text-accent fw-bold small" id="hoverAiConfidence">--</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="text-muted small">Ensemble Active</span>
+                                    <span class="text-success fw-bold small"><i class="bi bi-check-circle"></i> Yes</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Expand Icon -->
+                    <div class="camera-expand-icon" id="cameraExpandIcon" onclick="toggleCameraFullscreen()">
+                        <i class="bi bi-arrows-fullscreen"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENTER: Charts + Sensors -->
+        <div class="col-lg-4 mb-4">
+            <div class="d-flex flex-column gap-3" style="height: 100%;">
+                <!-- MAX30102 Sensor Panel -->
+                <div class="glass-card dash-panel flex-fill" id="max30102Panel">
+                    <div class="panel-header">
+                        <h6 class="panel-title"><i class="bi bi-heart-pulse me-2"></i>MAX30102 (HR + SpO₂)</h6>
+                        <span class="badge" id="max30102Status">
+                            <i class="bi bi-exclamation-triangle me-1"></i>NOT CONNECTED
+                        </span>
+                    </div>
+                    <!-- Offline overlay -->
+                    <div class="sensor-offline-overlay" id="max30102Offline">
+                        <i class="bi bi-usb-plug fs-2 mb-2" style="color:#ff9800;"></i>
+                        <p class="mb-1 fw-semibold">ESP32 + MAX30102 Not Connected</p>
+                        <small class="text-muted d-block mb-2" id="max30102Error">Connect via USB to enable heart rate &amp; SpO₂ monitoring</small>
+                        <span class="badge bg-warning-subtle text-warning"><i class="bi bi-info-circle me-1"></i>Using camera + questionnaire data only</span>
+                    </div>
+                    <!-- Live data (hidden when offline) -->
+                    <div class="sensor-live-data" id="max30102Live" style="display:none;">
+                        <div class="d-flex justify-content-around py-3">
+                            <div class="text-center">
+                                <div class="sensor-big-value" id="bpmValue" style="color:#f44336;">--</div>
+                                <small class="text-muted d-block">Heart Rate (BPM)</small>
+                            </div>
+                            <div class="text-center">
+                                <div class="sensor-big-value" id="spo2Value" style="color:#2196f3;">--</div>
+                                <small class="text-muted d-block">SpO₂ (%)</small>
+                            </div>
+                            <div class="text-center">
+                                <div class="sensor-big-value" id="rmssdValue" style="color:#4caf50;">--</div>
+                                <small class="text-muted d-block">HRV RMSSD</small>
+                            </div>
+                        </div>
+                        <div class="finger-status text-center py-1" id="fingerStatus">
+                            <small class="text-muted"><i class="bi bi-hand-index me-1"></i>Place finger on sensor</small>
+                        </div>
+                    </div>
+                    <div class="chart-container" style="height:100px;">
+                        <canvas id="hrvChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- EMG Sensor Panel -->
+                <div class="glass-card dash-panel flex-fill emg-panel" id="emgPanel">
+                    <div class="panel-header">
+                        <h6 class="panel-title"><i class="bi bi-lightning-charge me-2" style="color:#ff9800;"></i>EMG Sensor (Muscle Activity)</h6>
+                        <span class="badge" id="emgStatus">
+                            <i class="bi bi-exclamation-triangle me-1"></i>NOT CONNECTED
+                        </span>
+                    </div>
+                    <!-- Offline overlay -->
+                    <div class="sensor-offline-overlay" id="emgOffline">
+                        <i class="bi bi-lightning-charge fs-2 mb-2" style="color:#ff9800;"></i>
+                        <p class="mb-1 fw-semibold">EMG Sensor Not Connected</p>
+                        <small class="text-muted d-block mb-2">Connect ESP32 to enable muscle tension monitoring</small>
+                    </div>
+                    <!-- Live EMG data -->
+                    <div class="sensor-live-data" id="emgLive" style="display:none;">
+                        <div class="d-flex justify-content-around py-3">
+                            <div class="text-center">
+                                <div class="sensor-big-value" id="emgRawValue" style="color:#ff9800;">--</div>
+                                <small class="text-muted d-block">EMG Raw</small>
+                            </div>
+                            <div class="text-center">
+                                <div class="sensor-big-value" id="emgAvgValue" style="color:#ffb74d;">--</div>
+                                <small class="text-muted d-block">Avg Level</small>
+                            </div>
+                            <div class="text-center">
+                                <div class="emg-muscle-indicator" id="muscleIndicator">
+                                    <i class="bi bi-lightning-charge" id="muscleIcon"></i>
+                                    <span id="muscleLabel">Relaxed</span>
+                                </div>
+                                <small class="text-muted d-block">Muscle State</small>
+                            </div>
+                        </div>
+                        <div class="emg-tension-bar-container">
+                            <div class="d-flex justify-content-between mb-1">
+                                <small class="text-muted">Muscle Tension</small>
+                                <small class="text-warning fw-bold" id="emgTensionPct">0%</small>
+                            </div>
+                            <div class="progress" style="height: 6px; background: rgba(255,255,255,0.06);">
+                                <div class="progress-bar" id="emgTensionBar" role="progressbar"
+                                     style="width: 0%; background: linear-gradient(90deg, #4caf50, #ff9800, #f44336);"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-container" style="height:80px;">
+                        <canvas id="emgChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Fusion Score Chart -->
+                <div class="glass-card dash-panel flex-fill">
+                    <div class="panel-header">
+                        <h6 class="panel-title"><i class="bi bi-graph-up me-2"></i>Multimodal Fusion Score</h6>
+                        <span class="badge bg-warning-subtle text-warning">
+                            <i class="bi bi-cpu me-1"></i>AI
+                        </span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="fusionChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Active Sensors Summary -->
+                <div class="glass-card dash-panel" id="sensorSummaryPanel">
+                    <div class="panel-header">
+                        <h6 class="panel-title"><i class="bi bi-diagram-3 me-2"></i>Sensor Pipeline Status</h6>
+                    </div>
+                    <div class="sensor-pipeline py-2">
+                        <div class="pipeline-item" id="pipeline-camera">
+                            <span class="pipeline-dot offline"></span>
+                            <span class="pipeline-label">Camera (Expression + Blink + Posture)</span>
+                            <span class="pipeline-status badge" id="pipeline-camera-badge">OFFLINE</span>
+                        </div>
+                        <div class="pipeline-item" id="pipeline-max30102">
+                            <span class="pipeline-dot offline"></span>
+                            <span class="pipeline-label">MAX30102 (HR + SpO₂ + HRV)</span>
+                            <span class="pipeline-status badge" id="pipeline-max30102-badge">OFFLINE</span>
+                        </div>
+                        <div class="pipeline-item" id="pipeline-emg">
+                            <span class="pipeline-dot offline"></span>
+                            <span class="pipeline-label">EMG (Muscle Tension Analysis)</span>
+                            <span class="pipeline-status badge" id="pipeline-emg-badge">OFFLINE</span>
+                        </div>
+                        <div class="pipeline-item" id="pipeline-phq9">
+                            <span class="pipeline-dot online"></span>
+                            <span class="pipeline-label">PHQ-9 Questionnaire</span>
+                            <span class="pipeline-status badge bg-success-subtle text-success">ALWAYS ON</span>
+                        </div>
+                        <div class="pipeline-item" id="pipeline-ensemble">
+                            <span class="pipeline-dot online"></span>
+                            <span class="pipeline-label">AI Ensemble Model</span>
+                            <span class="pipeline-status badge bg-success-subtle text-success" id="pipeline-ensemble-badge">READY</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Serial Monitor -->
+                <div class="glass-card dash-panel" id="serialMonitorPanel">
+                    <div class="panel-header" style="cursor:pointer;" onclick="document.getElementById('serialBody').classList.toggle('d-none')">
+                        <h6 class="panel-title"><i class="bi bi-terminal me-2"></i>Live Serial Monitor</h6>
+                        <span class="badge" id="serialPortBadge">
+                            <i class="bi bi-usb-plug me-1"></i>--
+                        </span>
+                    </div>
+                    <div id="serialBody">
+                        <div id="serialOutput" style="
+                            background: #0d1117;
+                            color: #39d353;
+                            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+                            font-size: 11px;
+                            padding: 8px 10px;
+                            border-radius: 6px;
+                            height: 120px;
+                            overflow-y: auto;
+                            white-space: pre-wrap;
+                            word-break: break-all;
+                            line-height: 1.5;
+                        ">Waiting for ESP32 data...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Questions -->
+        <div class="col-lg-4 mb-4">
+            <div class="glass-card dash-panel d-flex flex-column" style="height: 100%;">
+                <div class="panel-header">
+                    <h6 class="panel-title"><i class="bi bi-chat-square-text me-2"></i>Adaptive Assessment</h6>
+                    <span class="badge bg-accent-badge" id="questionProgress">0 / {{ questions|length }}</span>
+                </div>
+                <!-- Progress Bar -->
+                <div class="question-progress-bar mb-3">
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-accent" role="progressbar" style="width: 0%"
+                             id="questionProgressBar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+                <!-- Question Cards -->
+                <div class="questions-container flex-grow-1" id="questionsContainer">
+                    {% for q in questions %}
+                    <div class="question-card" id="question-{{ q.id }}"
+                         {% if not loop.first %}style="display:none;"{% endif %}>
+                        <div class="question-number">
+                            <span class="q-source-badge">{{ q.source }}</span>
+                            Question {{ loop.index }} of {{ questions|length }}
+                        </div>
+                        <p class="question-text">{{ q.text }}</p>
+                        <div class="question-options">
+                            {% for opt in q.options %}
+                            <label class="option-label" id="option-{{ q.id }}-{{ opt.value }}">
+                                <input type="radio" name="q_{{ q.id }}" value="{{ opt.value }}"
+                                       onchange='submitAnswer({{ q.id }}, {{ q.text|tojson|safe }}, {{ opt.value }}, {{ opt.label|tojson|safe }})'>
+                                <span class="option-custom-radio"></span>
+                                <span class="option-text">{{ opt.label }}</span>
+                                <span class="option-score">{{ opt.value }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <!-- Adaptive Question Placeholder -->
+                    <div class="question-card" id="adaptiveQuestionSlot" style="display:none;">
+                        <div class="question-number">
+                            <span class="q-source-badge ai-badge">AI-Generated</span>
+                            <span id="adaptiveQNum">Adaptive</span>
+                        </div>
+                        <p class="question-text" id="adaptiveQText"></p>
+                        <div class="question-options" id="adaptiveQOptions"></div>
+                    </div>
+                    <!-- Completion Message -->
+                    <div class="question-complete text-center py-4" id="questionsComplete" style="display:none;">
+                        <div class="complete-icon mb-3">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </div>
+                        <h5>Assessment Complete</h5>
+                        <p class="text-muted">All questions answered. Click "End & Generate Report" below.</p>
+                    </div>
+                </div>
+
+                <!-- Fallback Notice -->
+                <div class="fallback-notice" id="fallbackNotice">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <span id="fallbackMessage">Sensor status: Checking...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Control Bar -->
+<div class="control-bar">
+    <div class="container-fluid px-4">
+        <div class="row align-items-center g-2">
+            <div class="col-md-4">
+                <div class="d-flex gap-2">
+                    <button class="btn btn-accent btn-lg" id="btnStartTest" onclick="startTest()">
+                        <i class="bi bi-play-fill me-1"></i>Start Test
+                    </button>
+                    <button class="btn btn-outline-light btn-lg" id="btnPauseTest" onclick="pauseTest()" disabled>
+                        <i class="bi bi-pause-fill me-1"></i>Pause
+                    </button>
+                    <button class="btn btn-danger btn-lg" id="btnEndTest" onclick="endTest()" disabled>
+                        <i class="bi bi-stop-fill me-1"></i>End & Generate Report
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-4 text-center">
+                <div class="mode-indicator" id="modeIndicator">
+                    <i class="bi bi-shield-check me-1"></i>
+                    <span id="modeText">Ready – Click Start to begin</span>
+                </div>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="d-flex align-items-center justify-content-end gap-3">
+                    <span class="confidence-live" id="liveConfidence">
+                        <i class="bi bi-graph-up me-1"></i>Confidence: <strong>---%</strong>
+                    </span>
+                    <a href="#" class="btn btn-outline-accent" id="btnDownloadPdf" style="display:none;">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>Download PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Result Modal (Non-blocking with async report polling) -->
+<div class="modal fade" id="resultModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content glass-card border-0">
+            <div class="modal-header border-0">
+                <h5 class="modal-title"><i class="bi bi-clipboard2-check me-2"></i>Test Complete</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="handleModalClose()"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="result-score-circle mb-3" id="resultScoreCircle">
+                    <span class="result-score-number" id="resultScore">0</span>
+                    <span class="result-score-label">/27</span>
+                </div>
+                <h4 id="resultSeverity" class="mb-2">--</h4>
+                <p class="text-muted" id="resultMessage">Processing...</p>
+
+                <!-- Report generation status -->
+                <div class="report-gen-status mt-3" id="reportGenStatus">
+                    <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+                        <div class="spinner-border spinner-border-sm text-accent" id="reportSpinner" role="status"></div>
+                        <span class="text-accent" id="reportStatusText">Generating AI report...</span>
+                    </div>
+                    <div class="progress mx-auto" style="height: 4px; max-width: 200px; background: rgba(255,255,255,0.06);">
+                        <div class="progress-bar bg-accent" id="reportProgressBar" style="width: 30%; transition: width 1s ease;"></div>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-center gap-3">
+                    <a href="#" class="btn btn-accent" id="resultReportLink">
+                        <i class="bi bi-file-earmark-medical me-1"></i>View Full Report
+                    </a>
+                    <button class="btn btn-outline-light" onclick="handleModalClose()" data-bs-dismiss="modal">
+                        <i class="bi bi-arrow-repeat me-1"></i>New Test
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const QUESTIONS = {{ questions | tojson }};
+    const TOTAL_QUESTIONS = QUESTIONS.length;
+</script>
+<link href="{{ url_for('static', filename='css/style.css') }}?v={{ range(1, 100000) | random }}" rel="stylesheet">
+<script src="{{ url_for('static', filename='js/dashboard.js') }}?v={{ range(1, 100000) | random }}"></script>
+{% endblock %}

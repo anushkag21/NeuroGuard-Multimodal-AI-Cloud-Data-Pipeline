@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% block title %}Settings – NeuroGuard Clinic{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 900px;">
+    <div class="mb-4">
+        <h2 class="fw-bold mb-1">Settings</h2>
+        <p class="text-muted mb-0">Configure sensors, API keys, and system preferences</p>
+    </div>
+
+    <form id="settingsForm">
+        <!-- API Configuration -->
+        <div class="glass-card p-4 mb-4">
+            <h5 class="mb-3"><i class="bi bi-key me-2 text-accent"></i>API Configuration</h5>
+            <div class="mb-3">
+                <label for="groqApiKey" class="form-label">Groq API Key</label>
+                <div class="input-group">
+                    <input type="password" class="form-control bg-transparent border-secondary"
+                           id="groqApiKey" placeholder="gsk_..." value="{{ settings.groq_api_key }}">
+                    <button class="btn btn-outline-secondary" type="button" onclick="toggleApiKey()">
+                        <i class="bi bi-eye" id="apiKeyToggleIcon"></i>
+                    </button>
+                </div>
+                <small class="text-muted">Required for adaptive question generation and report creation.
+                    Get your key at <a href="https://console.groq.com" target="_blank" class="text-accent">console.groq.com</a>
+                </small>
+            </div>
+        </div>
+
+        <!-- Serial Connection -->
+        <div class="glass-card p-4 mb-4">
+            <h5 class="mb-3"><i class="bi bi-usb-plug me-2 text-accent"></i>ESP32 Serial Connection</h5>
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label for="serialPort" class="form-label">Serial Port</label>
+                    <input type="text" class="form-control bg-transparent border-secondary"
+                           id="serialPort" value="{{ settings.serial_port }}"
+                           placeholder="/dev/cu.usbserial-0001">
+                    <small class="text-muted">Check with: <code>ls /dev/cu.usb*</code></small>
+                </div>
+                <div class="col-md-4">
+                    <label for="baudRate" class="form-label">Baud Rate</label>
+                    <select class="form-select bg-transparent border-secondary" id="baudRate">
+                        <option value="9600" {% if settings.baud_rate == 9600 %}selected{% endif %}>9600</option>
+                        <option value="115200" {% if settings.baud_rate == 115200 %}selected{% endif %}>115200</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sensor Toggles -->
+        <div class="glass-card p-4 mb-4">
+            <h5 class="mb-3"><i class="bi bi-broadcast-pin me-2 text-accent"></i>Sensor Configuration</h5>
+            <p class="text-muted small mb-3">
+                Enable or disable individual sensors. The system will automatically adapt
+                its analysis based on available inputs.
+            </p>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="sensor-toggle-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-camera-video text-info"></i>
+                                <span>Mac Camera</span>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="enableCamera"
+                                       {% if settings.enable_camera %}checked{% endif %}>
+                            </div>
+                        </div>
+                        <small class="text-muted">Facial expression, blink, posture</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="sensor-toggle-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-braces text-accent"></i>
+                                <span>EEG (BioAmp)</span>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="enableEeg"
+                                       {% if settings.enable_eeg %}checked{% endif %}>
+                            </div>
+                        </div>
+                        <small class="text-muted">Brain wave analysis</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="sensor-toggle-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-lightning-charge text-warning"></i>
+                                <span>EMG (BioAmp)</span>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="enableEmg"
+                                       {% if settings.enable_emg %}checked{% endif %}>
+                            </div>
+                        </div>
+                        <small class="text-muted">Muscle tension</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="sensor-toggle-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-heart-pulse text-danger"></i>
+                                <span>HRV (MAX30105)</span>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="enableHrv"
+                                       {% if settings.enable_hrv %}checked{% endif %}>
+                            </div>
+                        </div>
+                        <small class="text-muted">Heart rate variability</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="sensor-toggle-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-droplet text-success"></i>
+                                <span>SpO₂ (MAX30105)</span>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="enableSpo2"
+                                       {% if settings.enable_spo2 %}checked{% endif %}>
+                            </div>
+                        </div>
+                        <small class="text-muted">Blood oxygen saturation</small>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="sensor-toggle-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-robot text-purple"></i>
+                                <span>Adaptive Questions</span>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="enableAdaptive"
+                                       {% if settings.enable_adaptive_questions %}checked{% endif %}>
+                            </div>
+                        </div>
+                        <small class="text-muted">AI-generated follow-up questions</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Configuration -->
+        <div class="glass-card p-4 mb-4">
+            <h5 class="mb-3"><i class="bi bi-sliders me-2 text-accent"></i>Test Configuration</h5>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="cameraIndex" class="form-label">Camera Index</label>
+                    <input type="number" class="form-control bg-transparent border-secondary"
+                           id="cameraIndex" value="{{ settings.camera_index }}" min="0" max="5">
+                    <small class="text-muted">0 = built-in Mac camera</small>
+                </div>
+                <div class="col-md-4">
+                    <label for="testDuration" class="form-label">Max Test Duration (sec)</label>
+                    <input type="number" class="form-control bg-transparent border-secondary"
+                           id="testDuration" value="{{ settings.test_duration }}" min="60" max="600">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <div>
+                        <small class="text-muted d-block mb-1">Recommended: 120–300 seconds</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="d-flex justify-content-between align-items-center">
+            <button type="submit" class="btn btn-accent btn-lg px-5" id="saveSettingsBtn">
+                <i class="bi bi-check-lg me-2"></i>Save Settings
+            </button>
+            <button type="button" class="btn btn-outline-secondary" onclick="resetDefaults()">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>Reset to Defaults
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleApiKey() {
+    const input = document.getElementById('groqApiKey');
+    const icon = document.getElementById('apiKeyToggleIcon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'bi bi-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'bi bi-eye';
+    }
+}
+
+function resetDefaults() {
+    if (confirm('Reset all settings to defaults?')) {
+        document.getElementById('groqApiKey').value = '';
+        document.getElementById('serialPort').value = '/dev/cu.usbserial-0001';
+        document.getElementById('baudRate').value = '115200';
+        document.getElementById('cameraIndex').value = '0';
+        document.getElementById('testDuration').value = '180';
+        document.querySelectorAll('.form-check-input').forEach(cb => cb.checked = true);
+    }
+}
+
+document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('saveSettingsBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
+    const data = {
+        groq_api_key: document.getElementById('groqApiKey').value,
+        serial_port: document.getElementById('serialPort').value,
+        baud_rate: parseInt(document.getElementById('baudRate').value),
+        camera_index: parseInt(document.getElementById('cameraIndex').value),
+        test_duration: parseInt(document.getElementById('testDuration').value),
+        enable_camera: document.getElementById('enableCamera').checked,
+        enable_eeg: document.getElementById('enableEeg').checked,
+        enable_emg: document.getElementById('enableEmg').checked,
+        enable_hrv: document.getElementById('enableHrv').checked,
+        enable_spo2: document.getElementById('enableSpo2').checked,
+        enable_adaptive_questions: document.getElementById('enableAdaptive').checked,
+    };
+
+    try {
+        const res = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+        const result = await res.json();
+        btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Saved!';
+        btn.classList.replace('btn-accent', 'btn-success');
+        setTimeout(() => {
+            btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>Save Settings';
+            btn.classList.replace('btn-success', 'btn-accent');
+            btn.disabled = false;
+        }, 2000);
+    } catch (err) {
+        btn.innerHTML = '<i class="bi bi-exclamation-triangle me-2"></i>Error';
+        btn.classList.replace('btn-accent', 'btn-danger');
+        setTimeout(() => {
+            btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>Save Settings';
+            btn.classList.replace('btn-danger', 'btn-accent');
+            btn.disabled = false;
+        }, 2000);
+    }
+});
+</script>
+{% endblock %}

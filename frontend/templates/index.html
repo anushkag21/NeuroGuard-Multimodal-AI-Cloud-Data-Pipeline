@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% block title %}NeuroGuard Clinic – AI Depression Analysis{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="hero-bg-effects">
+        <div class="hero-orb hero-orb-1"></div>
+        <div class="hero-orb hero-orb-2"></div>
+        <div class="hero-orb hero-orb-3"></div>
+        <div class="hero-grid"></div>
+    </div>
+    <div class="container position-relative" style="z-index: 2;">
+        <div class="row align-items-center min-vh-75">
+            <div class="col-lg-7">
+                <div class="hero-badge mb-3">
+                    <i class="bi bi-cpu me-1"></i> AI-Powered Multimodal Analysis
+                </div>
+                <h1 class="hero-title">
+                    Real-Time Depression
+                    <span class="text-gradient">Self-Analysis</span>
+                    System
+                </h1>
+                <p class="hero-subtitle mt-3">
+                    Objective, sensor-driven mental health screening in under 5 minutes.
+                    Combines EEG, facial expression, eye-blink detection, body posture,
+                    and heart-rate variability for clinic-grade accuracy.
+                </p>
+                <div class="d-flex gap-3 mt-4 flex-wrap">
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-accent btn-lg px-5" id="startTestBtn">
+                        <i class="bi bi-play-circle me-2"></i>Start New Test
+                    </a>
+                    <a href="{{ url_for('history') }}" class="btn btn-outline-light btn-lg px-4">
+                        <i class="bi bi-clock-history me-2"></i>View History
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-5 d-none d-lg-block">
+                <div class="hero-visual">
+                    <div class="hero-brain-container">
+                        <div class="hero-ring hero-ring-1"></div>
+                        <div class="hero-ring hero-ring-2"></div>
+                        <div class="hero-ring hero-ring-3"></div>
+                        <div class="hero-brain-icon">
+                            <i class="bi bi-activity"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Bar -->
+<section class="stats-section">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="stat-card glass-card">
+                    <div class="stat-icon bg-accent-soft">
+                        <i class="bi bi-clipboard2-pulse"></i>
+                    </div>
+                    <div>
+                        <div class="stat-number" data-target="{{ stats.total_sessions }}">0</div>
+                        <div class="stat-label">Sessions Completed</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card glass-card">
+                    <div class="stat-icon bg-green-soft">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <div>
+                        <div class="stat-number" data-target="{{ stats.avg_confidence }}">0</div>
+                        <div class="stat-label">Avg. Confidence %</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card glass-card">
+                    <div class="stat-icon bg-purple-soft">
+                        <i class="bi bi-broadcast-pin"></i>
+                    </div>
+                    <div>
+                        <div class="stat-number" data-target="{{ stats.sensors_active }}">0</div>
+                        <div class="stat-label">Active Sensors</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">How It Works</h2>
+            <p class="section-subtitle">Three steps to objective mental health screening</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="feature-card glass-card h-100">
+                    <div class="feature-step">01</div>
+                    <div class="feature-icon-lg">
+                        <i class="bi bi-camera-video"></i>
+                    </div>
+                    <h3 class="feature-title">Multimodal Capture</h3>
+                    <p class="feature-desc">
+                        Mac camera captures facial expressions, eye blinks & posture.
+                        ESP32 hub reads EEG, EMG, heart rate & SpO₂ simultaneously.
+                    </p>
+                    <div class="feature-tags">
+                        <span class="tag">MediaPipe</span>
+                        <span class="tag">BioAmp EXG</span>
+                        <span class="tag">MAX30105</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="feature-card glass-card h-100">
+                    <div class="feature-step">02</div>
+                    <div class="feature-icon-lg">
+                        <i class="bi bi-cpu"></i>
+                    </div>
+                    <h3 class="feature-title">AI Fusion Analysis</h3>
+                    <p class="feature-desc">
+                        Hybrid CNN-LSTM + EfficientNet model with attention-based late fusion.
+                        Classifies depression severity with >95% target accuracy.
+                    </p>
+                    <div class="feature-tags">
+                        <span class="tag">CNN-LSTM</span>
+                        <span class="tag">EfficientNet</span>
+                        <span class="tag">PHQ-9</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="feature-card glass-card h-100">
+                    <div class="feature-step">03</div>
+                    <div class="feature-icon-lg">
+                        <i class="bi bi-file-earmark-medical"></i>
+                    </div>
+                    <h3 class="feature-title">Instant Report</h3>
+                    <p class="feature-desc">
+                        Groq LLM generates a natural-language report with severity score,
+                        confidence level, key observations & personalized recommendations.
+                    </p>
+                    <div class="feature-tags">
+                        <span class="tag">Groq LLM</span>
+                        <span class="tag">PDF Export</span>
+                        <span class="tag">2–5 min</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Modalities Section -->
+<section class="modalities-section py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Sensor Modalities</h2>
+            <p class="section-subtitle">Six synchronized data streams for comprehensive assessment</p>
+        </div>
+        <div class="row g-3">
+            <div class="col-md-4 col-6">
+                <div class="modality-card glass-card text-center">
+                    <i class="bi bi-braces modality-icon text-accent"></i>
+                    <h5>EEG</h5>
+                    <small class="text-muted">Brain Activity</small>
+                </div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="modality-card glass-card text-center">
+                    <i class="bi bi-lightning-charge modality-icon text-warning"></i>
+                    <h5>EMG</h5>
+                    <small class="text-muted">Muscle Tension</small>
+                </div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="modality-card glass-card text-center">
+                    <i class="bi bi-heart-pulse modality-icon text-danger"></i>
+                    <h5>HRV</h5>
+                    <small class="text-muted">Heart Variability</small>
+                </div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="modality-card glass-card text-center">
+                    <i class="bi bi-emoji-neutral modality-icon text-info"></i>
+                    <h5>Facial</h5>
+                    <small class="text-muted">Expressions</small>
+                </div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="modality-card glass-card text-center">
+                    <i class="bi bi-eye modality-icon text-success"></i>
+                    <h5>Blink</h5>
+                    <small class="text-muted">Eye Patterns</small>
+                </div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="modality-card glass-card text-center">
+                    <i class="bi bi-person-standing modality-icon text-purple"></i>
+                    <h5>Posture</h5>
+                    <small class="text-muted">Body Analysis</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section py-5">
+    <div class="container">
+        <div class="cta-card glass-card text-center p-5">
+            <h2 class="mb-3">Ready to Begin?</h2>
+            <p class="text-muted mb-4">
+                Start a new assessment session. The test takes only 2–5 minutes.
+            </p>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-accent btn-lg px-5">
+                <i class="bi bi-play-circle me-2"></i>Launch Dashboard
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Animated counter
+document.addEventListener('DOMContentLoaded', () => {
+    const counters = document.querySelectorAll('.stat-number');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const el = entry.target;
+                const target = parseFloat(el.dataset.target);
+                const isFloat = target % 1 !== 0;
+                const duration = 1500;
+                const start = performance.now();
+                const animate = (now) => {
+                    const elapsed = now - start;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const eased = 1 - Math.pow(1 - progress, 3);
+                    const current = eased * target;
+                    el.textContent = isFloat ? current.toFixed(1) : Math.floor(current);
+                    if (progress < 1) requestAnimationFrame(animate);
+                };
+                requestAnimationFrame(animate);
+                observer.unobserve(el);
+            }
+        });
+    }, { threshold: 0.5 });
+    counters.forEach(c => observer.observe(c));
+});
+</script>
+{% endblock %}
